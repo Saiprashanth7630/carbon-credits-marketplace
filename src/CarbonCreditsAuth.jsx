@@ -105,7 +105,7 @@ export default function CarbonCreditsAuth() {
                   value={signupForm.fullName}
                   onChange={handleSignupChange}
                   required
-                  placeholder="John Doe"
+                  placeholder="Your name"
                 />
               </label>
               <label style={styles.label}>
@@ -197,17 +197,6 @@ export default function CarbonCreditsAuth() {
                 </select>
               </label>
               <label style={{...styles.label, flexDirection: 'row', alignItems: 'center'}}>
-                <input
-                  style={{marginRight: 8}}
-                  type="checkbox"
-                  name="agreeToTerms"
-                  checked={signupForm.agreeToTerms}
-                  onChange={handleSignupChange}
-                />
-                I agree to the{' '}
-                <a href="/terms" target="_blank" rel="noreferrer" style={styles.link}>
-                  terms and conditions
-                </a>
               </label>
               <button
                 type="submit"
