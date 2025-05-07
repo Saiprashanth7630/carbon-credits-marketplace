@@ -1,0 +1,101 @@
+.home-container {
+  min-height: 100vh;
+  background-image: url('https://media.istockphoto.com/id/2106935269/vector/carbon-credits-concept-about-the-amount-of-greenhouse-gases-for-the-environment-and-reducing.jpg?s=612x612&w=0&k=20&c=oRDoGJGb7zE6Uyzn2gsZGnv_UlDWccwVbQqMODhfX9Q=');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  backdrop-filter: brightness(0.85);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  color: #374151;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.nav-link:hover {
+  color: #2563eb;
+}
+
+.home-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  margin: 4rem auto;
+  max-width: 800px;
+  border-radius: 1rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.home-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #111827;
+}
+
+.home-description {
+  font-size: 1.125rem;
+  color: #4b5563;
+  margin-bottom: 2rem;
+}
+
+.home-buttons {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.buy-button,
+.sell-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.buy-button {
+  background-color: #10b981;
+  color: white;
+}
+
+.buy-button:hover {
+  background-color: #059669;
+}
+
+.sell-button {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.sell-button:hover {
+  background-color: #2563eb;
+}

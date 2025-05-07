@@ -1,13 +1,18 @@
-import React from 'react';
-import './App.css';
-import CarbonCreditsAuth from './CarbonCreditsAuth';
+// src/App.jsx
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { UserProvider } from './context/UserContext';
+import CarbonCreditsAuth from './pages/CarbonCreditsAuth';
+import HomePage from './pages/HomePage';
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-      <CarbonCreditsAuth />
-    </div>
+    <UserProvider>
+      <Router>
+        <Routes>
+          <Route path="/auth/:mode" element={<CarbonCreditsAuth />} />
+          <Route path="/home" element={<HomePage />} />
+        </Routes>
+      </Router>
+    </UserProvider>
   );
 }
-
-export default App;
