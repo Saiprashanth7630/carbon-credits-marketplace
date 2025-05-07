@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useUser } from '../context/UserContext';
 
 export default function CarbonCreditsAuth() {
-  const { mode } = useParams(); // Get the mode (signin or signup) from the URL
-  const [isLogin, setIsLogin] = useState(mode === 'signin'); // Default to signin if mode is 'signin'
+  const { mode } = useParams();
+  const navigate = useNavigate();
+  const { setUser } = useUser();
+  const [isLogin, setIsLogin] = useState(mode === 'signin');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (mode === 'signup') {
-      setIsLogin(false); // Switch to signup mode if mode is 'signup'
+      setIsLogin(false);
     } else {
-      setIsLogin(true); // Default to signin mode if mode is 'signin' or other value
+      setIsLogin(true);
     }
   }, [mode]);
 
@@ -28,62 +32,99 @@ export default function CarbonCreditsAuth() {
     setSignupForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    alert(`Logging in with email: ${loginForm.email}`);
-  };
-
-  const handleSignupSubmit = async (e) => {
-    e.preventDefault();
-    if (!signupForm.agreeToTerms) {
-      alert('You must agree to the terms and conditions.');
-      return;
-    }
+    setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/signup', { // Make sure the correct port (5000) is used
+      const response = await fetch('http://localhost:5000/api/auth/signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          fullName: signupForm.fullName,
-          email: signupForm.email,
-          password: signupForm.password,
-          organization: signupForm.organization,
-          role: signupForm.role,
-          location: signupForm.location,
-          creditType: signupForm.creditType,
-          agreeToTerms: signupForm.agreeToTerms,
-        }),
+        body: JSON.stringify(loginForm),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to sign up');
-      }
+      const data = await response.json();
 
-      const result = await response.json();
-      alert(result.message); // Assuming the server returns a message
-    } catch (error) {
-      console.error('Signup error:', error);
-      alert('Signup failed. Please try again.');
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+        navigate('/home');
+      } else {
+        setError(data.message || 'Login failed');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Something went wrong. Please try again.');
+    }
+  };
+
+  const handleSignupSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!signupForm.agreeToTerms) {
+      setError('You must agree to the terms and conditions.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signupForm),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        navigate('/auth/signin');
+      } else {
+        setError(data.message || 'Signup failed');
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError('Something went wrong. Please try again.');
     }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.formContainer}>
+        {error && <div style={styles.error}>{error}</div>}
+        
         {isLogin ? (
           <>
             <h2 style={styles.title}>Login to Carbon Credits Marketplace</h2>
             <form onSubmit={handleLoginSubmit} style={styles.form}>
               <label style={styles.label}>
                 Email
-                <input style={styles.input} type="email" name="email" value={loginForm.email} onChange={handleLoginChange} required placeholder="you@example.com" />
+                <input 
+                  style={styles.input} 
+                  type="email" 
+                  name="email" 
+                  value={loginForm.email} 
+                  onChange={handleLoginChange} 
+                  required 
+                  placeholder="you@example.com" 
+                />
               </label>
               <label style={styles.label}>
                 Password
-                <input style={styles.input} type="password" name="password" value={loginForm.password} onChange={handleLoginChange} required placeholder="Your password" minLength={6} />
+                <input 
+                  style={styles.input} 
+                  type="password" 
+                  name="password" 
+                  value={loginForm.password} 
+                  onChange={handleLoginChange} 
+                  required 
+                  placeholder="Your password" 
+                  minLength={6} 
+                />
               </label>
               <button type="submit" style={styles.button}>Login</button>
             </form>
@@ -98,31 +139,82 @@ export default function CarbonCreditsAuth() {
             <form onSubmit={handleSignupSubmit} style={styles.form}>
               <label style={styles.label}>
                 Full Name
-                <input style={styles.input} type="text" name="fullName" value={signupForm.fullName} onChange={handleSignupChange} required placeholder="John Doe" />
+                <input 
+                  style={styles.input} 
+                  type="text" 
+                  name="fullName" 
+                  value={signupForm.fullName} 
+                  onChange={handleSignupChange} 
+                  required 
+                  placeholder="John Doe" 
+                />
               </label>
               <label style={styles.label}>
                 Email
-                <input style={styles.input} type="email" name="email" value={signupForm.email} onChange={handleSignupChange} required placeholder="you@example.com" />
+                <input 
+                  style={styles.input} 
+                  type="email" 
+                  name="email" 
+                  value={signupForm.email} 
+                  onChange={handleSignupChange} 
+                  required 
+                  placeholder="you@example.com" 
+                />
               </label>
               <label style={styles.label}>
                 Password
-                <input style={styles.input} type="password" name="password" value={signupForm.password} onChange={handleSignupChange} required minLength={6} placeholder="Create a password" />
+                <input 
+                  style={styles.input} 
+                  type="password" 
+                  name="password" 
+                  value={signupForm.password} 
+                  onChange={handleSignupChange} 
+                  required 
+                  minLength={6} 
+                  placeholder="Create a password" 
+                />
               </label>
               <label style={styles.label}>
                 Organization Name
-                <input style={styles.input} type="text" name="organization" value={signupForm.organization} onChange={handleSignupChange} placeholder="Your business or organization" />
+                <input 
+                  style={styles.input} 
+                  type="text" 
+                  name="organization" 
+                  value={signupForm.organization} 
+                  onChange={handleSignupChange} 
+                  placeholder="Your business or organization" 
+                />
               </label>
               <label style={styles.label}>
                 Role / Position
-                <input style={styles.input} type="text" name="role" value={signupForm.role} onChange={handleSignupChange} placeholder="e.g. Buyer, Seller, Broker" />
+                <input 
+                  style={styles.input} 
+                  type="text" 
+                  name="role" 
+                  value={signupForm.role} 
+                  onChange={handleSignupChange} 
+                  placeholder="e.g. Buyer, Seller, Broker" 
+                />
               </label>
               <label style={styles.label}>
                 Location
-                <input style={styles.input} type="text" name="location" value={signupForm.location} onChange={handleSignupChange} placeholder="City, Country" />
+                <input 
+                  style={styles.input} 
+                  type="text" 
+                  name="location" 
+                  value={signupForm.location} 
+                  onChange={handleSignupChange} 
+                  placeholder="City, Country" 
+                />
               </label>
               <label style={styles.label}>
                 Type of Carbon Credits Interested In
-                <select style={styles.input} name="creditType" value={signupForm.creditType} onChange={handleSignupChange}>
+                <select 
+                  style={styles.input} 
+                  name="creditType" 
+                  value={signupForm.creditType} 
+                  onChange={handleSignupChange}
+                >
                   <option value="" disabled>Select credit type</option>
                   <option value="renewable-energy">Renewable Energy</option>
                   <option value="forestry">Forestry</option>
@@ -132,11 +224,23 @@ export default function CarbonCreditsAuth() {
                 </select>
               </label>
               <label style={{...styles.label, flexDirection: 'row', alignItems: 'center'}}>
-                <input type="checkbox" name="agreeToTerms" checked={signupForm.agreeToTerms} onChange={handleSignupChange} style={{marginRight: 8}} />
+                <input 
+                  type="checkbox" 
+                  name="agreeToTerms" 
+                  checked={signupForm.agreeToTerms} 
+                  onChange={handleSignupChange} 
+                  style={{marginRight: 8}} 
+                />
                 I agree to the{' '}
                 <a href="/terms" target="_blank" rel="noreferrer" style={styles.link}>terms and conditions</a>
               </label>
-              <button type="submit" style={{...styles.button, marginTop: 16}} disabled={!signupForm.agreeToTerms}>Sign Up</button>
+              <button 
+                type="submit" 
+                style={{...styles.button, marginTop: 16}} 
+                disabled={!signupForm.agreeToTerms}
+              >
+                Sign Up
+              </button>
             </form>
             <p style={styles.switchText}>
               Already have an account?{' '}
@@ -148,7 +252,6 @@ export default function CarbonCreditsAuth() {
     </div>
   );
 }
-
 
 const styles = {
   container: {
@@ -210,7 +313,7 @@ const styles = {
   switchText: {
     marginTop: 20,
     textAlign: 'center',
-    color: 'white',
+    color: '#2e7d32',
     fontWeight: '600',
   },
   linkButton: {
@@ -225,5 +328,13 @@ const styles = {
   link: {
     color: '#2e7d32',
     textDecoration: 'underline',
+  },
+  error: {
+    backgroundColor: '#ffebee',
+    color: '#c62828',
+    padding: '10px',
+    borderRadius: '4px',
+    marginBottom: '16px',
+    textAlign: 'center',
   }
 };
