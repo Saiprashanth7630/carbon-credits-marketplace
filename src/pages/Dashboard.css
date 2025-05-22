@@ -1,0 +1,70 @@
+.dashboard-container {
+  padding: 2rem 1rem;
+  min-height: calc(100vh - 64px); /* Subtract navbar height */
+}
+
+.dashboard-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.dashboard-header h1 {
+  color: #2E7D32;
+  margin-bottom: 0.5rem;
+}
+
+.balance-card,
+.transactions-card,
+.actions-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.balance-card .MuiCardContent-root {
+  flex-grow: 1;
+}
+
+.balance-item {
+  margin: 1rem 0;
+  padding: 0.5rem 0;
+}
+
+.balance-item:not(:last-child) {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.transaction-item {
+  padding: 0.75rem 0;
+}
+
+.transaction-item:last-child .MuiDivider-root {
+  display: none;
+}
+
+.error-paper {
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: center;
+  background-color: #ffebee;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .balance-card .MuiCardActions-root {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .actions-card .MuiGrid-container {
+    gap: 0.5rem;
+  }
+} 

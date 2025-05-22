@@ -1,10 +1,26 @@
 {
   "name": "hardhat-project",
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "@nomicfoundation/hardhat-ignition": "^0.15.0",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@nomicfoundation/ignition-core": "^0.15.0",
+    "@typechain/ethers-v6": "^0.5.0",
+    "@typechain/hardhat": "^9.0.0",
+    "@types/chai": "^4.2.0",
+    "@types/mocha": "^10.0.0",
+    "chai": "^4.2.0",
     "ethers": "^6.13.4",
-    "hardhat": "^2.24.0"
+    "hardhat": "^2.24.0",
+    "hardhat-gas-reporter": "^1.0.8",
+    "solidity-coverage": "^0.8.0",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.3.0",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.2.0",
@@ -17,7 +33,11 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy-contract": "npx hardhat run scripts/deploy.js --network ganache",
+    "deploy": "npx hardhat run scripts/deploy.js --network ganache",
+    "update-frontend": "node scripts/update-frontend.js",
+    "full-deploy": "npm run deploy && echo 'Contract deployed and frontend updated with new contract address.'"
   },
   "keywords": [],
   "author": "",

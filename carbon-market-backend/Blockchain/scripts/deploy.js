@@ -1,4 +1,6 @@
 const hre = require("hardhat");
+const fs = require("fs");
+const path = require("path");
 
 async function main() {
   console.log("Deploying Carbon Credits Marketplace contract...");
@@ -25,6 +27,41 @@ async function main() {
   // Get deployer information
   const [deployer] = await hre.ethers.getSigners();
   console.log("\nDeployer Address:", deployer.address);
+  
+  // Save deployment information to a log file
+  const deploymentInfo = `
+Deployment Information:
+----------------------
+Timestamp: ${new Date().toISOString()}
+Contract: CarbonCreditsMarketplace
+CarbonCreditsMarketplace deployed to: ${address}
+Network: ${hre.network.name}
+Initial Supply: ${hre.ethers.formatEther(initialSupply)} tokens
+Price per Credit: ${hre.ethers.formatEther(pricePerCredit)} ETH
+Deployer Address: ${deployer.address}
+  `;
+  
+  // Save to a log file
+  const logPath = path.join(__dirname, "../deployment-log.txt");
+  fs.writeFileSync(logPath, deploymentInfo);
+  console.log("\nDeployment information saved to:", logPath);
+  
+  // Run the frontend update script if on a local network
+  if (hre.network.name === "localhost" || hre.network.name === "hardhat" || hre.network.name === "ganache") {
+    console.log("\nUpdating frontend with contract information...");
+    try {
+      // Run the update-frontend script with the contract address
+      const { execSync } = require("child_process");
+      execSync(`node ${path.join(__dirname, "update-frontend.js")} ${address}`, { 
+        encoding: "utf8",
+        stdio: "inherit"
+      });
+    } catch (error) {
+      console.error("Error updating frontend:", error.message);
+      console.log("You can manually update the frontend by running:");
+      console.log(`node scripts/update-frontend.js ${address}`);
+    }
+  }
 }
 
 main()

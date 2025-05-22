@@ -1,129 +1,96 @@
 import React from 'react';
-import { 
-  Route, 
-  Navigate,
-  createRoutesFromElements,
-  createBrowserRouter,
-  RouterProvider,
-  Outlet
-} from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import Navbar from './components/Layout/Navbar';
-import Login from './components/Auth/Login';
-import Register from './components/Auth/Register';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from './theme';
+
+// Layout Components
+import Layout from './components/Layout/Layout';
+
+// Page Components
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import WalletBalances from './pages/WalletBalances';
+import Transactions from './pages/Transactions';
+import AdminRoute from './components/AdminRoute';
 import Home from './components/Home/Home';
 import BuyCredits from './components/BuyCredits/BuyCredits';
 import SellCredits from './components/SellCredits/SellCredits';
-import './App.css';
+import SellCreditRequest from './components/SellCreditRequest/SellCreditRequest';
+import AdminLogin from './pages/AdminLogin';
+import AdminRegister from './pages/AdminRegister';
 
-// Create a custom theme
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2E7D32', // Green color for environmental theme
-      light: '#4CAF50',
-      dark: '#1B5E20',
-    },
-    secondary: {
-      main: '#00796B', // Teal color for accent
-      light: '#009688',
-      dark: '#004D40',
-    },
-    background: {
-      default: '#F5F5F5',
-      paper: '#FFFFFF',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 600,
-    },
-    h6: {
-      fontWeight: 500,
-    },
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontWeight: 500,
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        },
-      },
-    },
-  },
-});
+// Admin Pages
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminTransactions from './pages/AdminTransactions';
+import AdminSettings from './pages/AdminSettings';
+import AdminCreditReviews from './pages/AdminCreditReviews';
 
-// Protected Route component
+// Auth Protection Component
 const ProtectedRoute = ({ children }) => {
-  const user = localStorage.getItem('user');
-  if (!user) {
-    return <Navigate to="/login" />;
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
   }
   return children;
 };
 
-// Layout component
-const Layout = () => {
-  return (
-    <div className="App">
-      <Navbar />
-      <Outlet />
-    </div>
-  );
-};
-
-// Create router with future flags enabled
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <Route element={<Layout />}>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route
-        path="/buy-credits"
-        element={
-          <ProtectedRoute>
-            <BuyCredits />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sell-credits"
-        element={
-          <ProtectedRoute>
-            <SellCredits />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/" element={<Home />} />
-      <Route path="*" element={<Navigate to="/" />} />
-    </Route>
-  ),
-  {
-    future: {
-      v7_startTransition: true,
-      v7_relativeSplatPath: true
-    }
-  }
-);
-
-function App() {
+const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RouterProvider router={router} />
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/register" element={<AdminRegister />} />
+        <Route path="/" element={<Home />} />
+
+        {/* Protected Routes */}
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/app/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="wallet" element={<WalletBalances />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="buy-credits" element={<BuyCredits />} />
+          <Route path="sell-credits" element={<SellCredits />} />
+          <Route path="sell-request" element={<SellCreditRequest />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Layout />
+            </AdminRoute>
+          }
+        >
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="transactions" element={<AdminTransactions />} />
+          <Route path="settings" element={<AdminSettings />} />
+          <Route path="credit-reviews" element={<AdminCreditReviews />} />
+        </Route>
+
+        {/* Fallback Route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </ThemeProvider>
   );
-}
+};
 
 export default App;

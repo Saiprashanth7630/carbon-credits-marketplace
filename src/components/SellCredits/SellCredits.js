@@ -1,153 +1,226 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Container,
-    Typography,
-    Box,
-    TextField,
-    Button,
-    Paper,
-    Alert,
-    CircularProgress
-} from '@mui/material';
-import { Sell } from '@mui/icons-material';
-import { ethers } from 'ethers';
-import { blockchainService } from '../services/blockchainService';  // Assuming this service is set up correctly
+import { useMetaMask } from '../../hooks/useMetaMask';
+import { initializeBlockchain, getCarbonCredits, transferCredits } from '../../services/blockchainService';
+import { supportedChains } from '../../services/web3Config';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import './SellCredits.css';
 
 const SellCredits = () => {
-    const [amount, setAmount] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(false);
-    const [availableCredits, setAvailableCredits] = useState(0);
-    const [recipientAddress, setRecipientAddress] = useState('');
+  const { account, active, library, chainId, switchNetwork, connect } = useMetaMask();
+  const [amount, setAmount] = useState('');
+  const [recipient, setRecipient] = useState('');
+  const [credits, setCredits] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [contract, setContract] = useState(null);
 
-    useEffect(() => {
-        fetchAvailableCredits();
-    }, []);
+  useEffect(() => {
+    if (active && library) {
+      console.log('MetaMask connected, initializing contract...');
+      initializeContract();
+    }
+  }, [active, library]);
 
-    const fetchAvailableCredits = async () => {
-        try {
-            const userWallet = await blockchainService.getUserWallet();  // Get user wallet address
+  const initializeContract = async () => {
+    try {
+      console.log('Initializing blockchain...');
+      const { contract } = await initializeBlockchain(library);
+      console.log('Contract initialized:', contract.address);
+      setContract(contract);
+      await refreshCredits();
+    } catch (error) {
+      console.error('Error initializing contract:', error);
+      setError('Failed to initialize contract');
+    }
+  };
 
-            if (!userWallet) {
-                setError('Please connect your wallet');
-                return;
-            }
+  const refreshCredits = async () => {
+    if (!contract || !account) {
+      console.log('Cannot refresh credits - contract or account missing:', { 
+        hasContract: !!contract, 
+        account 
+      });
+      return;
+    }
 
-            const credits = await blockchainService.getCredits(userWallet);  // Fetch available credits directly from blockchain
-            setAvailableCredits(credits);
-        } catch (err) {
-            setError('Failed to fetch available credits');
-        }
-    };
+    try {
+      console.log('Refreshing credits for account:', account);
+      setLoading(true);
+      const userCredits = await getCarbonCredits(contract);
+      console.log('Fetched credits:', userCredits);
+      
+      if (!userCredits || userCredits.length === 0) {
+        console.log('No credits found for user');
+        setCredits([]);
+      } else {
+        console.log('Setting credits:', userCredits);
+        setCredits(userCredits);
+      }
+      setError('');
+    } catch (error) {
+      console.error('Error getting credits:', error);
+      setError('Failed to get credit balance');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleSell = async () => {
-        if (!amount || amount <= 0) {
-            setError('Please enter a valid amount');
-            return;
-        }
+  // Add effect to refresh credits when account changes
+  useEffect(() => {
+    if (contract && account) {
+      console.log('Account changed, refreshing credits...');
+      refreshCredits();
+    }
+  }, [account, contract]);
 
-        if (amount > availableCredits) {
-            setError('You cannot sell more credits than you own');
-            return;
-        }
+  const handleTransfer = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
 
-        if (!recipientAddress) {
-            setError('Please enter a recipient address');
-            return;
-        }
+    try {
+      if (!active) {
+        throw new Error('Please connect your wallet first');
+      }
 
-        setLoading(true);
-        setError(null);
-        setSuccess(false);
+      if (chainId !== supportedChains.GANACHE) {
+        await switchNetwork(supportedChains.GANACHE);
+        return;
+      }
 
-        try {
-            const userWallet = await blockchainService.getUserWallet();
+      if (!contract) {
+        throw new Error('Contract not initialized');
+      }
 
-            if (!userWallet) {
-                setError('Please connect your wallet');
-                setLoading(false);
-                return;
-            }
+      const amountNum = parseInt(amount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        throw new Error('Please enter a valid amount');
+      }
 
-            const totalAmountInWei = ethers.utils.parseUnits(amount.toString(), 'ether');
+      if (!recipient || !recipient.startsWith('0x') || recipient.length !== 42) {
+        throw new Error('Please enter a valid recipient address');
+      }
 
-            const tx = await blockchainService.transferCredits(userWallet, recipientAddress, totalAmountInWei);
+      // Check if user has enough credits
+      const userCredits = await getCarbonCredits(contract);
+      const userBalance = parseInt(userCredits[0].amount);
+      
+      if (amountNum > userBalance) {
+        throw new Error(`Insufficient balance. You have ${userBalance} credits available.`);
+      }
 
-            // Wait for the transaction to be mined
-            await tx.wait();
+      const tx = await transferCredits(contract, recipient, amountNum);
+      console.log('Transfer successful:', tx);
+      
+      setSuccess(`Successfully transferred ${amount} credits to ${recipient}`);
+      setAmount('');
+      setRecipient('');
+      await refreshCredits();
+    } catch (error) {
+      console.error('Error transferring credits:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            setSuccess('Successfully transferred carbon credits!');
-            setAmount('');
-            setRecipientAddress('');
-            fetchAvailableCredits();  // Refresh available credits after transfer
-        } catch (err) {
-            setError(err.message || 'Failed to process the transfer');
-        } finally {
-            setLoading(false);
-        }
-    };
-
+  if (!active) {
     return (
-        <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
-            <Paper sx={{ p: 4 }}>
-                <Typography variant="h4" gutterBottom align="center">
-                    Transfer Carbon Credits
-                </Typography>
-                
-                <Typography variant="body1" sx={{ mb: 1 }} align="center" color="text.secondary">
-                    Transfer your carbon credits to another address.
-                </Typography>
-
-                <Typography variant="subtitle1" sx={{ mb: 3 }} align="center">
-                    Available Credits: {availableCredits}
-                </Typography>
-
-                {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Alert>
-                )}
-
-                {success && (
-                    <Alert severity="success" sx={{ mb: 2 }}>
-                        Successfully transferred carbon credits!
-                    </Alert>
-                )}
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <TextField
-                        label="Recipient Address"
-                        value={recipientAddress}
-                        onChange={(e) => setRecipientAddress(e.target.value)}
-                        fullWidth
-                        placeholder="0x..."
-                    />
-
-                    <TextField
-                        label="Number of Credits to Transfer"
-                        type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        fullWidth
-                        InputProps={{
-                            inputProps: { min: 1, max: availableCredits }
-                        }}
-                    />
-
-                    <Button
-                        variant="contained"
-                        size="large"
-                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Sell />}
-                        onClick={handleSell}
-                        disabled={loading || !amount || amount > availableCredits || !recipientAddress}
-                    >
-                        {loading ? 'Processing...' : 'Transfer Credits'}
-                    </Button>
-                </Box>
-            </Paper>
-        </Container>
+      <div className="sell-credits-container">
+        <h2>Sell/Transfer Credits</h2>
+        <div className="connect-wallet-section">
+          <p>Please connect your MetaMask wallet to transfer credits</p>
+          <button 
+            onClick={connect} 
+            className="connect-wallet-button"
+            disabled={loading}
+          >
+            <AccountBalanceWalletIcon /> Connect MetaMask
+          </button>
+        </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="sell-credits-container">
+      <h2>Sell/Transfer Credits</h2>
+      
+      {active && chainId !== supportedChains.GANACHE && (
+        <div className="network-warning">
+          <p>Please switch to Ganache network</p>
+          <button onClick={() => switchNetwork(supportedChains.GANACHE)}>
+            Switch Network
+          </button>
+        </div>
+      )}
+
+      <div className="credits-summary">
+        <h3>Your Credits</h3>
+        {loading ? (
+          <p>Loading credits...</p>
+        ) : credits.length === 0 ? (
+          <div>
+            <p>No credits available</p>
+            <p className="debug-info">Account: {account}</p>
+            <p className="debug-info">Network: {chainId === supportedChains.GANACHE ? 'Ganache' : 'Other'}</p>
+          </div>
+        ) : (
+          <div className="credits-list">
+            {credits.map((credit) => (
+              <div key={credit.id} className="credit-item">
+                <p>Amount: {credit.amount}</p>
+                <p>Price: {credit.price} ETH</p>
+                <p>Status: {credit.isForSale ? 'For Sale' : 'Not For Sale'}</p>
+                <p className="debug-info">Owner: {credit.owner}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleTransfer} className="transfer-form">
+        <div className="form-group">
+          <label htmlFor="recipient">Recipient Address:</label>
+          <input
+            type="text"
+            id="recipient"
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            placeholder="0x..."
+            required
+            disabled={!active || loading}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="amount">Amount to Transfer:</label>
+          <input
+            type="number"
+            id="amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            min="1"
+            required
+            disabled={!active || loading}
+          />
+        </div>
+
+        {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
+
+        <button
+          type="submit"
+          disabled={!active || loading || chainId !== supportedChains.GANACHE}
+          className="transfer-button"
+        >
+          {loading ? 'Processing...' : 'Transfer Credits'}
+        </button>
+      </form>
+    </div>
+  );
 };
 
 export default SellCredits;

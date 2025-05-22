@@ -1,195 +1,221 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent, SetStateAction, Dispatch } from 'react';
 import {
   Container,
   Paper,
   Typography,
-  Button,
-  TextField,
   Box,
+  TextField,
+  Button,
   Alert,
+  Card,
+  CardContent,
   CircularProgress,
+  Divider,
 } from '@mui/material';
-import Grid2 from '@mui/material/Grid';
-import { ethers } from 'ethers';
-import { blockchainService } from '../services/blockchainService';
+
+// Mock blockchain service functions for now
+const getCreditPrice = async (): Promise<number> => {
+  // Mock implementation
+  return 0.1;
+};
+
+const purchaseCredits = async (amount: number): Promise<boolean> => {
+  // Mock implementation
+  return true;
+};
+
+const transferCredits = async (amount: number, recipient: string): Promise<boolean> => {
+  // Mock implementation
+  return true;
+};
+
+interface BlockchainData {
+  walletAddress: string;
+  credits: number;
+  creditPrice: number;
+}
 
 const Dashboard = () => {
-  const [balance, setBalance] = useState('0');
-  const [creditPrice, setCreditPrice] = useState('0');
+  const [walletAddress, setWalletAddress] = useState('');
+  const [credits, setCredits] = useState<number>(0);
+  const [creditPrice, setCreditPrice] = useState<number>(0);
   const [purchaseAmount, setPurchaseAmount] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
   const [recipientAddress, setRecipientAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  // Get user's wallet address from localStorage or context
-  const userWalletAddress = localStorage.getItem('walletAddress') || '';
+  const [isMockData, setIsMockData] = useState(true);
 
   useEffect(() => {
-    if (userWalletAddress) {
-      fetchBalanceAndPrice();
-    }
-  }, [userWalletAddress]);
+    const fetchData = async () => {
+      try {
+        // Mock data for now
+        setWalletAddress('0x123...');
+        setCredits(100);
+        const price = await getCreditPrice();
+        setCreditPrice(price);
+      } catch (err) {
+        setError('Failed to fetch blockchain data');
+        setIsMockData(true);
+      }
+    };
 
-  const fetchBalanceAndPrice = async () => {
-    try {
-      const [balanceResult, priceResult] = await Promise.all([
-        blockchainService.getBalance(userWalletAddress),
-        blockchainService.getCreditPrice(),
-      ]);
-      setBalance(balanceResult.toString());
-      setCreditPrice(priceResult.toString());
-    } catch (err) {
-      setError('Failed to fetch balance and price');
-    }
+    fetchData();
+  }, []);
+
+  const handlePurchaseAmountChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setPurchaseAmount(e.target.value);
   };
 
-  const handlePurchase = async () => {
+  const handleTransferAmountChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setTransferAmount(e.target.value);
+  };
+
+  const handleRecipientAddressChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setRecipientAddress(e.target.value);
+  };
+
+  const handlePurchaseCredits = async () => {
+    if (!purchaseAmount) {
+      setError('Please enter an amount to purchase');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
+
     try {
-      if (!purchaseAmount || parseFloat(purchaseAmount) <= 0) {
-        setError('Please enter a valid amount to purchase.');
-        setLoading(false);
-        return;
+      const amount = parseFloat(purchaseAmount);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error('Invalid purchase amount');
       }
-      // purchaseCredits expects amount as a number or string representing the number of tokens
-      await blockchainService.purchaseCredits(purchaseAmount);
-      setSuccess('Purchase successful!');
-      await fetchBalanceAndPrice();
-      setPurchaseAmount('');
+
+      const success = await purchaseCredits(amount);
+      if (success) {
+        setSuccess('Credits purchased successfully');
+        setCredits((prev: number) => prev + amount);
+        setPurchaseAmount('');
+      } else {
+        throw new Error('Failed to purchase credits');
+      }
     } catch (err) {
-      setError('Failed to purchase credits');
+      setError(err instanceof Error ? err.message : 'Failed to purchase credits');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleTransfer = async () => {
+  const handleTransferCredits = async () => {
+    if (!transferAmount || !recipientAddress) {
+      setError('Please enter both amount and recipient address');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
+
     try {
-      if (!transferAmount || parseFloat(transferAmount) <= 0) {
-        setError('Please enter a valid amount to transfer.');
-        setLoading(false);
-        return;
+      const amount = parseFloat(transferAmount);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error('Invalid transfer amount');
       }
-      if (!recipientAddress) {
-        setError('Please enter a recipient address.');
-        setLoading(false);
-        return;
+
+      if (amount > credits) {
+        throw new Error('Insufficient credits');
       }
-      await blockchainService.transferCredits(recipientAddress, transferAmount);
-      setSuccess('Transfer successful!');
-      await fetchBalanceAndPrice();
-      setTransferAmount('');
-      setRecipientAddress('');
+
+      const success = await transferCredits(amount, recipientAddress);
+      if (success) {
+        setSuccess('Credits transferred successfully');
+        setCredits((prev: number) => prev - amount);
+        setTransferAmount('');
+        setRecipientAddress('');
+      } else {
+        throw new Error('Failed to transfer credits');
+      }
     } catch (err) {
-      setError('Failed to transfer credits');
+      setError(err instanceof Error ? err.message : 'Failed to transfer credits');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {success}
-        </Alert>
-      )}
+    <Container>
+      <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
+        <Typography variant="h5" gutterBottom>Dashboard</Typography>
+        
+        {isMockData && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            You are viewing demo data as no blockchain connection is available. 
+            Transactions will be simulated.
+          </Alert>
+        )}
+        
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>Account Information</Typography>
+            <Typography variant="body1">Wallet Address: {walletAddress}</Typography>
+            <Typography variant="body1">Available Credits: {credits}</Typography>
+            <Typography variant="body1">Credit Price: {creditPrice} ETH</Typography>
+          </CardContent>
+        </Card>
 
-      <Box sx={{ flexGrow: 1 }}>
-        <Grid2 container spacing={3}>
-          {/* Balance and Price Card */}
-          <Grid2 xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Account Overview
-              </Typography>
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body1">Your Balance: {balance} Credits</Typography>
-                <Typography variant="body1" sx={{ mt: 1 }}>
-                  Current Price: {creditPrice} ETH per Credit
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid2>
+        <Box mt={3}>
+          <Typography variant="h6" gutterBottom>Purchase Carbon Credits</Typography>
+          <TextField
+            label="Purchase Amount"
+            value={purchaseAmount}
+            onChange={handlePurchaseAmountChange}
+            fullWidth
+            sx={{ mb: 1 }}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handlePurchaseCredits}
+            disabled={loading}
+            fullWidth
+          >
+            {loading ? <CircularProgress size={24} /> : 'Purchase Credits'}
+          </Button>
+        </Box>
 
-          {/* Purchase Credits Card */}
-          <Grid2 xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Purchase Credits
-              </Typography>
-              <TextField
-                fullWidth
-                label="Amount to Purchase"
-                type="number"
-                value={purchaseAmount}
-                onChange={(e) => setPurchaseAmount(e.target.value)}
-                sx={{ mt: 2 }}
-                inputProps={{ min: 1, step: 'any' }}
-              />
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handlePurchase}
-                disabled={loading || !purchaseAmount}
-                sx={{ mt: 2 }}
-              >
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Purchase Credits'}
-              </Button>
-            </Paper>
-          </Grid2>
+        <Divider sx={{ my: 3 }} />
 
-          {/* Transfer Credits Card */}
-          <Grid2 xs={12}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Transfer Credits
-              </Typography>
-              <Grid2 container spacing={2}>
-                <Grid2 xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Recipient Address"
-                    value={recipientAddress}
-                    onChange={(e) => setRecipientAddress(e.target.value)}
-                    sx={{ mt: 1 }}
-                  />
-                </Grid2>
-                <Grid2 xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Amount to Transfer"
-                    type="number"
-                    value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
-                    sx={{ mt: 1 }}
-                    inputProps={{ min: 1, step: 'any' }}
-                  />
-                </Grid2>
-              </Grid2>
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleTransfer}
-                disabled={loading || !transferAmount || !recipientAddress}
-                sx={{ mt: 2 }}
-              >
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Transfer Credits'}
-              </Button>
-            </Paper>
-          </Grid2>
-        </Grid2>
-      </Box>
+        <Box mt={2}>
+          <Typography variant="h6" gutterBottom>Transfer Carbon Credits</Typography>
+          <TextField
+            label="Transfer Amount"
+            value={transferAmount}
+            onChange={handleTransferAmountChange}
+            fullWidth
+            sx={{ mb: 1 }}
+          />
+          <TextField
+            label="Recipient Address"
+            value={recipientAddress}
+            onChange={handleRecipientAddressChange}
+            fullWidth
+            sx={{ mb: 1 }}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleTransferCredits}
+            disabled={loading}
+            fullWidth
+          >
+            {loading ? <CircularProgress size={24} /> : 'Transfer Credits'}
+          </Button>
+        </Box>
+      </Paper>
     </Container>
   );
 };

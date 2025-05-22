@@ -1,15 +1,35 @@
-require('dotenv').config();
+// server.js
 const express = require('express');
+const dotenv = require('dotenv');
 const cors = require('cors');
-const blockchainRoutes = require('./routes/blockchainRoutes');
+const routes = require('./routes/blockchainRoutes');
+dotenv.config();
+console.log('Private Key:', process.env.PRIVATE_KEY);
 
 const app = express();
-const port = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// Enable CORS for frontend
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
-app.use('/api/blockchain', blockchainRoutes); // All blockchain logic is modularized
+app.use('/api', routes);
 
-app.listen(port, () => {
-    console.log(`Blockchain server running on port ${port}`);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal server error'
+    }
+  });
+});
+
+app.listen(PORT, () => {
+    console.log(`API Gateway server running on port ${PORT}`);
 });

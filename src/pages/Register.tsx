@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, SetStateAction, Dispatch } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -17,51 +17,74 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 
+interface RegisterFormData {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  fullName: string;
+  organization: string;
+  role: 'Buyer' | 'Seller';
+  location: string;
+  creditType: 'renewable-energy' | 'forestry' | 'agriculture' | 'industrial';
+}
+
 const Register = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
     fullName: '',
     organization: '',
-    role: '',
+    role: 'Buyer',
     location: '',
-    creditType: '',
+    creditType: 'renewable-energy',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev: RegisterFormData) => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleSelectChange = (e: SelectChangeEvent) => {
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev: RegisterFormData) => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
 
+    // Validate all required fields
+    const requiredFields = ['username', 'email', 'password', 'fullName', 'organization', 'role', 'location', 'creditType'];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+    
+    if (missingFields.length > 0) {
+      setError(`Missing required fields: ${missingFields.join(', ')}`);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.post('http://localhost:5000/api/users/register', {
+      const response = await axios.post('http://localhost:3001/api/users/register', {
         username: formData.username,
         email: formData.email,
         password: formData.password,

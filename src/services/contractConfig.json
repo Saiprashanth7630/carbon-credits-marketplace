@@ -1,0 +1,10 @@
+{
+  "contractAddress": "0xEd9d3bBa21e387B4554999035404452D5595D1F3",
+  "network": {
+    "chainId": 1337,
+    "name": "Ganache",
+    "rpcUrl": "http://localhost:7545"
+  },
+  "initialPrice": "0.1",
+  "priceDecimals": 18
+}

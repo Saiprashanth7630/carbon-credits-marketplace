@@ -1,0 +1,11 @@
+
+Deployment Information:
+----------------------
+Timestamp: 2025-05-19T07:57:06.115Z
+Contract: CarbonCreditsMarketplace
+CarbonCreditsMarketplace deployed to: 0xC9C36972FC13DF63Fdd66aa566BE42b5E77a1990
+Network: ganache
+Initial Supply: 1000000.0 tokens
+Price per Credit: 0.01 ETH
+Deployer Address: 0x4dAD8A3A437FeE4297b22A6b74dc00a7400E756A
+  

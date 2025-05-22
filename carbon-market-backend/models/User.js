@@ -30,16 +30,45 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         required: true,
-        enum: ['Buyer', 'Seller', 'Admin']
+        enum: ['admin', 'Buyer', 'Seller'],
+        default: 'Buyer'
+    },
+    permissions: [{
+        type: String,
+        enum: [
+            'manage_users',
+            'manage_credits',
+            'manage_prices',
+            'withdraw_funds',
+            'view_analytics',
+            'manage_listings'
+        ]
+    }],
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    auth: {
+        token: String,
+        lastLogin: {
+            type: Date
+        }
+    },
+    adminMetadata: {
+        walletAddress: String,
+        isContractOwner: {
+            type: Boolean,
+            default: false
+        },
+        accessLevel: {
+            type: String,
+            enum: ['super_admin', 'admin', 'moderator'],
+            default: 'admin'
+        }
     },
     location: {
         type: String,
         required: true
-    },
-    walletAddress: {
-        type: String,
-        unique: true,
-        sparse: true
     },
     creditType: {
         type: String,
@@ -79,6 +108,22 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-const User = mongoose.model('User', userSchema);
+// Add method to check if user is admin
+userSchema.methods.isAdmin = function() {
+    return this.role === 'admin';
+};
+
+// Add method to check specific permission
+userSchema.methods.hasPermission = function(permission) {
+    return this.permissions.includes(permission);
+};
+
+// Add method to check if user can access admin portal
+userSchema.methods.canAccessAdminPortal = function() {
+    return this.isAdmin() && this.isActive;
+};
+
+// Check if the model already exists to avoid OverwriteModelError
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 module.exports = User; 
